@@ -2570,6 +2570,7 @@
         let isInitialized = false;
 
         document.addEventListener("DOMContentLoaded", () => {
+            initPairingTable();
             initDuplicatesView();
 
             // Listen for Realtime Changes from Firebase across all devices
@@ -2578,12 +2579,7 @@
                 pairedMentees = val.pairedMentees || {};
                 mentorAssignments = val.mentorAssignments || {};
 
-                if (!isInitialized) {
-                    initPairingTable();
-                    isInitialized = true;
-                } else {
-                    updatePairingSelects();
-                }
+                updatePairingSelects();
                 refreshAllVisuals();
             });
         });
@@ -2704,7 +2700,7 @@
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="text-lg font-bold text-slate-900">${dup.original_name}</h4>
-                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">2 Submissions Found</span>
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">${dup.submissions.length} Submissions Found</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${subsHtml}
