@@ -2567,6 +2567,7 @@
 
         let pairedMentees = {};
         let mentorAssignments = {};
+        let isInitialized = false;
 
         document.addEventListener("DOMContentLoaded", () => {
             initDuplicatesView();
@@ -2577,7 +2578,12 @@
                 pairedMentees = val.pairedMentees || {};
                 mentorAssignments = val.mentorAssignments || {};
 
-                initPairingTable();
+                if (!isInitialized) {
+                    initPairingTable();
+                    isInitialized = true;
+                } else {
+                    updatePairingSelects();
+                }
                 refreshAllVisuals();
             });
         });
@@ -2627,6 +2633,7 @@
                 const sortedMatches = Object.entries(row.scores).sort((a, b) => b[1] - a[1]);
                 const topMatch = sortedMatches.length > 0 ? sortedMatches[0] : ["None", 0];
                 const currentAssigned = mentorAssignments[menteeName] || "";
+                const safeNameId = menteeName.replace(/[^a-zA-Z0-9]/g, '_');
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50/80 pairing-row";
@@ -2641,7 +2648,7 @@
                 tr.innerHTML = `
                     <td class="px-4 py-3 font-medium text-slate-900">${menteeName}</td>
                     <td class="px-4 py-3">
-                        <select class="w-full max-w-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" onchange="updateAssignment('${menteeName.replace(/'/g, "\\")}', this.value)">
+                        <select id="select-${safeNameId}" class="w-full max-w-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" onchange="updateAssignment('${menteeName.replace(/'/g, "\\")}', this.value)">
                             ${optionsHtml}
                         </select>
                     </td>
@@ -2650,6 +2657,18 @@
                     </td>
                 `;
                 tbody.appendChild(tr);
+            });
+        }
+
+        function updatePairingSelects() {
+            matchData.matrix.forEach(row => {
+                const menteeName = row.mentee;
+                const currentAssigned = mentorAssignments[menteeName] || "";
+                const safeNameId = menteeName.replace(/[^a-zA-Z0-9]/g, '_');
+                const selectEl = document.getElementById(`select-${safeNameId}`);
+                if (selectEl && selectEl.value !== currentAssigned) {
+                    selectEl.value = currentAssigned;
+                }
             });
         }
 
@@ -2685,7 +2704,7 @@
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="text-lg font-bold text-slate-900">${dup.original_name}</h4>
-                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">${dup.submissions.length} Submissions Found</span>
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">2 Submissions Found</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${subsHtml}
@@ -2708,7 +2727,6 @@
                 pairedMentees[menteeName] = false; 
             }
 
-            // Push changes instantly to Firebase (syncs for everyone)
             dbRef.set({
                 pairedMentees: pairedMentees,
                 mentorAssignments: mentorAssignments
@@ -2724,7 +2742,6 @@
                 delete mentorAssignments[menteeName];
             }
 
-            // Push changes instantly to Firebase
             dbRef.set({
                 pairedMentees: pairedMentees,
                 mentorAssignments: mentorAssignments
@@ -2738,7 +2755,6 @@
                 const isPaired = !!pairedMentees[menteeName];
                 const assignedMentor = mentorAssignments[menteeName] || "";
 
-                // 1. Update Card Inspector
                 const card = document.getElementById(`card-${safeId}`);
                 const checkbox = document.getElementById(`check-${safeId}`);
                 const statusDiv = document.getElementById(`status-${safeId}`);
@@ -2762,7 +2778,6 @@
                     }
                 }
 
-                // 2. Update Full Matrix Row
                 const matrixRow = document.getElementById(`matrix-row-${safeId}`);
                 if (matrixRow) {
                     const matrixNameEl = matrixRow.querySelector('.matrix-name-el');
